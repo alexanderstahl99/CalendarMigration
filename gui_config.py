@@ -6,6 +6,8 @@ from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.core.window import Window
 
+gcal = []
+
 class CalendarGUI(BoxLayout):
 
     split = BoxLayout(
@@ -98,7 +100,8 @@ class CalendarGUI(BoxLayout):
             if isinstance(child, BoxLayout):
                 for i in child.children:
                     if isinstance(i, TextInput):
-                        print(i.text)
+                        gcal.append(i.text)
+        AppGUI().stop()
 
 
 class AppGUI(App):

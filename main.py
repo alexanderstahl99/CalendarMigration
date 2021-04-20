@@ -5,6 +5,7 @@ import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from gui_config import AppGUI, gcal
 
 # API Key:
 # AIzaSyD0iMzDfjnSrUGwJRVeg9H0sZsR1Af014w
@@ -13,10 +14,7 @@ from google.auth.transport.requests import Request
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 
-def main():
-    """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
-    """
+def authenticate():
     creds = None
     # The file token.pickle stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -37,8 +35,49 @@ def main():
             pickle.dump(creds, token)
 
     service = build('calendar', 'v3', credentials=creds)
+    return service
 
-    # Call the Calendar API
+def get_users_calendars(service):
+    cals = {}
+    calendar_list = service.calendarList().list().execute()
+    for calendar in calendar_list['items']:
+        # print(calendar['summary'], calendar['id'])
+        cals[calendar['summary']] = calendar['id']
+    return cals
+
+
+def make_cal_pickle(service):
+    if not os.path.exists('cal_res.pickle'):
+        AppGUI().run()
+        target_calendars = {}
+        all_cals = get_users_calendars(service)
+        for name in all_cals.keys():
+            if 'Canvas' in name:
+                target_calendars['Canvas'] = all_cals[name]
+            else:
+                for targ_cal in gcal:
+                    if targ_cal.lower() in name.lower() and targ_cal is not '':
+                        print(name, all_cals[name])
+                        target_calendars[name] = all_cals[name]
+        with open('cal_res.pickle', 'wb') as cf:
+            pickle.dump(target_calendars, cf, pickle.HIGHEST_PROTOCOL)
+            print('pickle made :)')
+    return
+
+
+def get_calendar_ids():
+    with open('cal_res.pickle', 'rb') as cp:
+        cal_dict =  pickle.load(cp)
+        cal_list = [cal_dict['Canvas']]
+        for key in cal_dict.keys():
+            if 'Canvas' not in key:
+                cal_list.append(cal_dict[key])
+        return cal_dict
+
+def main():
+    service = authenticate()
+    make_cal_pickle(service)
+    cal_ids = get_calendar_ids()
     now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
     # Get all events from Canvas Calendar
     # TODO: Modify IDs for the different calendars you'd like to add to
@@ -48,7 +87,7 @@ def main():
     phil110_id = 'umich.edu_nhuop1m0bg7slf5iiajt2maojk@group.calendar.google.com'
     soc344_id = 'umich.edu_8epjqpmk2vafdvaqemr64bbd08@group.calendar.google.com'
     # TODO: Change calendarId accordingly in below function call
-    canvas_result = service.events().list(calendarId=canvas, timeMin=now, singleEvents=True,
+    canvas_result = service.events().list(calendarId=cal_ids['Canvas'], timeMin=now, singleEvents=True,
                                             orderBy='startTime').execute()
     events = canvas_result.get('items', [])
     new_event_to_add = False
@@ -59,15 +98,12 @@ def main():
         # print(start, event['summary'])
         title = event['summary']
         # TODO: Sub variables  in conditionals + 'cal_id' equivalencies
-        if 'EECS 312' in title:
-            cal_id = eecs312_id
-        elif 'SOC' in title:
-            cal_id = soc344_id
-        elif 'ENG' in title:
-            cal_id = eng293_id
-        elif 'PHIL' in title:
-            cal_id = phil110_id
-        else:
+        cal_id = ''
+        for key in cal_ids.keys():
+            if key in title:
+                cal_id = cal_ids[key]
+
+        if cal_id == '':
             continue
         calendar_result = service.events().list(calendarId=cal_id, singleEvents=True,
                                                 orderBy='startTime').execute()

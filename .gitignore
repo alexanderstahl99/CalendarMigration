@@ -1,4 +1,4 @@
 # Project exclude paths
 /venv/
-/token.pickle/
+/.pickle/
 /credentials.json/
