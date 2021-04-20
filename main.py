@@ -80,13 +80,6 @@ def main():
     cal_ids = get_calendar_ids()
     now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
     # Get all events from Canvas Calendar
-    # TODO: Modify IDs for the different calendars you'd like to add to
-    canvas = 'h355t080vd0c68l1qvfbgnbsrl86sis1@import.calendar.google.com'
-    eecs312_id = 'umich.edu_1471sha5jmcn0knsebviui52i4@group.calendar.google.com'
-    eng293_id = 'c_roua8kia7f9fli003agco5qgj8@group.calendar.google.com'
-    phil110_id = 'umich.edu_nhuop1m0bg7slf5iiajt2maojk@group.calendar.google.com'
-    soc344_id = 'umich.edu_8epjqpmk2vafdvaqemr64bbd08@group.calendar.google.com'
-    # TODO: Change calendarId accordingly in below function call
     canvas_result = service.events().list(calendarId=cal_ids['Canvas'], timeMin=now, singleEvents=True,
                                             orderBy='startTime').execute()
     events = canvas_result.get('items', [])
